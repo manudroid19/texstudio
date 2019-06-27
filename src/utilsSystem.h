@@ -4,6 +4,12 @@
 #include "mostQtHeaders.h"
 #include <QCache>
 
+  /*
+    Explanation of this macros:
+    Both will first do Q_ASSERT. This is only for development purposes. It will print a warning in the console during a debugging sessión if x is NULL.
+    After that check, it will check in the if again looking for a NULL and if it is, it'll return to the previous function in the stack call.
+    The do-while does nothing as it is while(0). Runs one time and done.
+  */
 #define REQUIRE(x)  do { Q_ASSERT((x)); if (!(x)) return; } while (0)
 #define REQUIRE_RET(x,e) do { Q_ASSERT((x)); if (!(x)) return (e); } while (0)
 

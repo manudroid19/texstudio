@@ -356,12 +356,13 @@ QScriptValue buildManagerRunCommandWrapper(QScriptContext *context, QScriptEngin
 {
 	ScriptObject *sc = needPrivileges(engine, "buildManager.runCommand", context->argument(0).toString() + ", " + context->argument(1).toString() + ", " + context->argument(2).toString());
 	if (!sc) return engine->undefinedValue();
-	return engine->newVariant(sc->buildManager->runCommand(
-	                              context->argument(0).toString(),
-	                              context->argument(1).isUndefined() ? QFileInfo() : context->argument(1).toString(),
-	                              context->argument(2).isUndefined() ? QFileInfo() : context->argument(2).toString(),
-	                              context->argument(3).isUndefined() ? 0 : context->argument(3).toInt32()
-	                          ));
+    sc->buildManager->runCommand(
+                                      context->argument(0).toString(),
+                                      context->argument(1).isUndefined() ? QFileInfo() : context->argument(1).toString(),
+                                      context->argument(2).isUndefined() ? QFileInfo() : context->argument(2).toString(),
+                                      context->argument(3).isUndefined() ? 0 : context->argument(3).toInt32()
+                                  );
+    return engine->undefinedValue();
 }
 
 QScriptValue editorSaveWrapper(QScriptContext *context, QScriptEngine *engine)

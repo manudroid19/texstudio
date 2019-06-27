@@ -1457,20 +1457,20 @@ void BuildManager::checkLatexConfiguration(bool &noWarnAgain)
 	}
 }
 
-bool BuildManager::runCommand(const QString &unparsedCommandLine, const QFileInfo &mainFile, const QFileInfo &currentFile, int currentLine, QString *buffer, QTextCodec *codecForBuffer )
+void BuildManager::runCommand(const QString &unparsedCommandLine, const QFileInfo &mainFile, const QFileInfo &currentFile, int currentLine, QString *buffer, QTextCodec *codecForBuffer )
 {
-	if (waitingForProcess()) return false;
+    if (waitingForProcess()) return;
 
     emit clearLogs();
 
 	if (unparsedCommandLine.isEmpty()) {
 		emit processNotification(tr("Error: No command given"));
-		return false;
+        return;
 	}
 	ExpandingOptions options(mainFile, currentFile, currentLine);
 	ExpandedCommands expansion = expandCommandLine(unparsedCommandLine, options);
-	if (options.canceled) return false;
-	if (!checkExpandedCommands(expansion)) return false;
+    if (options.canceled) return;
+    if (!checkExpandedCommands(expansion)) return;
 
 	bool latexCompiled = false, pdfChanged = false;
 	for (int i = 0; i < expansion.commands.size(); i++) {
@@ -1487,9 +1487,9 @@ bool BuildManager::runCommand(const QString &unparsedCommandLine, const QFileInf
 	bool asyncPdf = !(expansion.commands.last().flags & RCF_WAITFORFINISHED) && (expansion.commands.last().flags & RCF_CHANGE_PDF);
 
 	emit beginRunningCommands(expansion.primaryCommand, latexCompiled, pdfChanged, asyncPdf);
-	bool result = runCommandInternal(expansion, mainFile, buffer, codecForBuffer);
+    runCommandInternal(expansion, mainFile, buffer, codecForBuffer);
 	emit endRunningCommands(expansion.primaryCommand, latexCompiled, pdfChanged, asyncPdf);
-	return result;
+    return;
 }
 
 bool BuildManager::checkExpandedCommands(const ExpandedCommands &expansion)
@@ -1519,7 +1519,7 @@ bool BuildManager::checkExpandedCommands(const ExpandedCommands &expansion)
 	return true;
 }
 
-bool BuildManager::runCommandInternal(const ExpandedCommands &expandedCommands, const QFileInfo &mainFile, QString *buffer, QTextCodec *codecForBuffer)
+void BuildManager::runCommandInternal(const ExpandedCommands &expandedCommands, const QFileInfo &mainFile, QString *buffer, QTextCodec *codecForBuffer)
 {
 	const QList<CommandToRun> &commands = expandedCommands.commands;
 
@@ -1536,7 +1536,7 @@ bool BuildManager::runCommandInternal(const ExpandedCommands &expandedCommands, 
 		bool waitForCommand = latexCompiler || (!lastCommandToRun && !singleInstance) || cur.flags & RCF_WAITFORFINISHED;
 
 		ProcessX *p = newProcessInternal(cur.command, mainFile, singleInstance);
-		REQUIRE_RET(p, false);
+        REQUIRE(p);
 		p->subCommandName = cur.parentCommand;
 		p->subCommandPrimary = expandedCommands.primaryCommand;
 		p->subCommandFlags = cur.flags;
@@ -1551,12 +1551,12 @@ bool BuildManager::runCommandInternal(const ExpandedCommands &expandedCommands, 
 		if (!waitForCommand) connect(p, SIGNAL(finished(int)), p, SLOT(deleteLater()));
 
 		p->startCommand();
-		if (!p->waitForStarted(1000)) return false;
+        if (!p->waitForStarted(1000)) return;
 
 		if (latexCompiler || (!lastCommandToRun && !singleInstance) )
 			if (!waitForProcess(p)) {
 				p->deleteLater();
-				return false;
+                return;
 			}
 
 		if (waitForCommand) { //what is this? does not really make any sense (waiting is done in the block above) and breaks multiple single-instance pdf viewer calls (30 sec delay)
@@ -1568,7 +1568,7 @@ bool BuildManager::runCommandInternal(const ExpandedCommands &expandedCommands, 
 		if (rerunnable || latexCompiler) {
 			LatexCompileResult result = LCR_NORMAL;
 			emit latexCompiled(&result);
-			if (result == LCR_ERROR) return false;
+            if (result == LCR_ERROR) return;
 			if (result == LCR_NORMAL || !rerunnable) continue;
 			if (remainingReRunCount <= 0) continue; //do not abort since the rerun condition might have been trigged accidentally
 			if (result == LCR_RERUN_WITH_BIBLIOGRAPHY) {
@@ -1576,14 +1576,13 @@ bool BuildManager::runCommandInternal(const ExpandedCommands &expandedCommands, 
 				runCommand(CMD_BIBLIOGRAPHY, mainFile, mainFile, 0, &tempWaitForFinished);
 				remainingReRunCount--;
 			}
-			REQUIRE_RET(result == LCR_RERUN || result == LCR_RERUN_WITH_BIBLIOGRAPHY, false);
+            REQUIRE(result == LCR_RERUN || result == LCR_RERUN_WITH_BIBLIOGRAPHY);
 			remainingReRunCount--;
 			i--; //rerun
 			//qDebug() << "rerun";
 		}
 
 	}
-	return true;
 }
 
 void BuildManager::emitEndRunningSubCommandFromProcessX(int)

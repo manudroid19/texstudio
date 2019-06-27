@@ -5658,7 +5658,7 @@ void Texstudio::addMagicProgram()
 }
 
 ///////////////TOOLS////////////////////
-bool Texstudio::runCommand(const QString &commandline, QString *buffer, QTextCodec *codecForBuffer)
+void Texstudio::runCommand(const QString &commandline, QString *buffer, QTextCodec *codecForBuffer)
 {
 	fileSaveAll(buildManager.saveFilesBeforeCompiling == BuildManager::SFBC_ALWAYS, buildManager.saveFilesBeforeCompiling == BuildManager::SFBC_ONLY_CURRENT_OR_NAMED);
 	if (documents.getTemporaryCompileFileName() == "") {
@@ -5668,19 +5668,17 @@ bool Texstudio::runCommand(const QString &commandline, QString *buffer, QTextCod
 			currentEditorView()->document->setTemporaryFileName(tmpName);
 		} else {
 			QMessageBox::warning(this, tr("Error"), tr("Can't detect the file name.\nYou have to save a document before you can compile it."));
-			return false;
 		}
 	}
 
 	QString finame = documents.getTemporaryCompileFileName();
 	if (finame == "") {
 		UtilsUi::txsWarning(tr("Can't detect the file name"));
-		return false;
 	}
 
 	int ln = currentEditorView() ? currentEditorView()->editor->cursor().lineNumber() + 1 : 0;
 
-	return buildManager.runCommand(commandline, finame, getCurrentFileName(), ln, buffer, codecForBuffer);
+    buildManager.runCommand(commandline, finame, getCurrentFileName(), ln, buffer, codecForBuffer);
 }
 
 /*!
@@ -5688,11 +5686,11 @@ bool Texstudio::runCommand(const QString &commandline, QString *buffer, QTextCod
  * TODO: Maybe these kind of calls should be decoupled from the buildmanager altogether, or
  * this should become a separate method of the buildmanager.
  */
-bool Texstudio::runCommandNoSpecialChars(QString commandline, QString *buffer, QTextCodec *codecForBuffer) {
+void Texstudio::runCommandNoSpecialChars(QString commandline, QString *buffer, QTextCodec *codecForBuffer) {
 	commandline.replace('@', "@@");
 	commandline.replace('%', "%%");
 	commandline.replace('?', "??");
-	return runCommand(commandline, buffer, codecForBuffer);
+     runCommand(commandline, buffer, codecForBuffer);
 }
 
 void Texstudio::setStatusMessageProcess(const QString &message)
